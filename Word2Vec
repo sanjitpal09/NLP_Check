@@ -1,0 +1,17 @@
+import gensim.downloader as api
+
+# Load pre-trained Word2Vec model (Google News vectors)
+model = api.load("word2vec-google-news-300")
+
+# Get word embedding for a word
+word = "computer"
+embedding = model[word]
+
+print(f"Embedding for '{word}':\n", embedding)
+
+# Calculate similarity between two words
+word1 = "king"
+word2 = "queen"
+similarity = model.similarity(word1, word2)
+
+print(f"Similarity between '{word1}' and '{word2}':", similarity)

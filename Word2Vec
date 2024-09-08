@@ -15,3 +15,54 @@ word2 = "queen"
 similarity = model.similarity(word1, word2)
 
 print(f"Similarity between '{word1}' and '{word2}':", similarity)
+
+
+
+-------------------------------------------
+
+
+
+import gensim.downloader as api
+from numpy import mean
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+import nltk
+from nltk.tokenize import word_tokenize
+
+# Download the pre-trained Word2Vec model
+model = api.load("word2vec-google-news-300")
+
+# Function to get the average word embedding for a phrase
+def get_phrase_embedding(phrase, model):
+    # Tokenize the phrase
+    words = word_tokenize(phrase.lower())
+    # Filter out words not in the model's vocabulary
+    words = [word for word in words if word in model.key_to_index]
+    if not words:
+        raise ValueError("None of the words in the phrase are in the model's vocabulary.")
+    # Get embeddings for each word
+    embeddings = [model[word] for word in words]
+    # Compute the average embedding
+    phrase_embedding = mean(embeddings, axis=0)
+    return phrase_embedding
+
+# Function to compute similarity between two phrases
+def phrase_similarity(phrase1, phrase2, model):
+    embedding1 = get_phrase_embedding(phrase1, model)
+    embedding2 = get_phrase_embedding(phrase2, model)
+    # Reshape for cosine similarity
+    embedding1 = embedding1.reshape(1, -1)
+    embedding2 = embedding2.reshape(1, -1)
+    # Compute cosine similarity
+    similarity = cosine_similarity(embedding1, embedding2)[0][0]
+    return similarity
+
+# Example phrases
+phrase1 = "I love machine learning"
+phrase2 = "I adore artificial intelligence"
+
+# Compute similarity
+similarity = phrase_similarity(phrase1, phrase2, model)
+
+print(f"Similarity between phrases: {similarity}")
+

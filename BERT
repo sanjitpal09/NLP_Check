@@ -1,0 +1,48 @@
+from transformers import BertTokenizer, BertModel
+import torch
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+
+# Load pre-trained BERT model and tokenizer
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+model = BertModel.from_pretrained('bert-base-uncased')
+
+# Function to get BERT embedding for a phrase
+def get_phrase_embedding(phrase, tokenizer, model):
+    # Tokenize the input phrase and get input IDs and attention mask
+    inputs = tokenizer(phrase, return_tensors='pt', padding=True, truncation=True)
+    
+    with torch.no_grad():
+        # Get the hidden states from the model (output hidden states and last hidden layer)
+        outputs = model(**inputs)
+    
+    # Get the embeddings for all tokens in the phrase
+    hidden_states = outputs.last_hidden_state.squeeze(0)
+    
+    # Compute the average embedding of all tokens
+    phrase_embedding = torch.mean(hidden_states, dim=0).numpy()
+    
+    return phrase_embedding
+
+# Function to compute similarity between two phrases
+def phrase_similarity(phrase1, phrase2, tokenizer, model):
+    embedding1 = get_phrase_embedding(phrase1, tokenizer, model)
+    embedding2 = get_phrase_embedding(phrase2, tokenizer, model)
+    
+    # Reshape for cosine similarity
+    embedding1 = embedding1.reshape(1, -1)
+    embedding2 = embedding2.reshape(1, -1)
+    
+    # Compute cosine similarity
+    similarity = cosine_similarity(embedding1, embedding2)[0][0]
+    
+    return similarity
+
+# Example phrases
+phrase1 = "I love machine learning"
+phrase2 = "I adore artificial intelligence"
+
+# Compute similarity
+similarity = phrase_similarity(phrase1, phrase2, tokenizer, model)
+
+print(f"Similarity between phrases: {similarity}")

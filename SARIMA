@@ -1,0 +1,79 @@
+import pmdarima as pm
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.metrics import mean_absolute_error
+
+# Example: Generate a univariate seasonal time series (monthly data with yearly seasonality)
+np.random.seed(0)
+n_periods = 120  # 10 years of monthly data
+seasonal_period = 12
+trend = np.linspace(10, 100, n_periods)
+seasonality = 10 * np.sin(np.linspace(0, 2 * np.pi * 10, n_periods))
+noise = np.random.normal(0, 5, n_periods)
+y = trend + seasonality + noise
+date_range = pd.date_range(start='2010-01-01', periods=n_periods, freq='M')
+
+# Create a DataFrame for the time series
+data = pd.DataFrame({'date': date_range, 'value': y})
+data.set_index('date', inplace=True)
+
+# Split data into training and testing sets
+train_size = int(len(data) * 0.8)
+train, test = data.iloc[:train_size], data.iloc[train_size:]
+
+# Define a function to evaluate and select the model based on MAE
+def evaluate_sarima(train_data, test_data, seasonal_period):
+    best_mae = np.inf
+    best_model = None
+    best_forecast = None
+    best_conf_int = None
+    
+    # Search over a range of (p, d, q) and (P, D, Q) values
+    for p in range(0, 4):
+        for d in range(0, 2):
+            for q in range(0, 4):
+                for P in range(0, 3):
+                    for D in range(0, 2):
+                        for Q in range(0, 3):
+                            try:
+                                # Fit SARIMA model
+                                model = pm.ARIMA(order=(p, d, q), 
+                                                 seasonal_order=(P, D, Q, seasonal_period),
+                                                 suppress_warnings=True)
+                                model.fit(train_data)
+
+                                # Forecast
+                                forecast, conf_int = model.predict(n_periods=len(test_data), return_conf_int=True)
+                                
+                                # Calculate MAE
+                                mae = mean_absolute_error(test_data, forecast)
+
+                                # If this model has lower MAE, select it
+                                if mae < best_mae:
+                                    best_mae = mae
+                                    best_model = model
+                                    best_forecast = forecast
+                                    best_conf_int = conf_int
+                            except Exception as e:
+                                continue
+    return best_model, best_forecast, best_conf_int, best_mae
+
+# Perform the model selection
+best_model, forecast, conf_int, best_mae = evaluate_sarima(train['value'], test['value'], seasonal_period)
+
+# Print the best model and the corresponding MAE
+print(f"Best SARIMA Model: {best_model.order} with seasonal_order={best_model.seasonal_order}")
+print(f"Best MAE: {best_mae:.2f}")
+
+# Plot the results
+plt.figure(figsize=(10, 6))
+plt.plot(train.index, train['value'], label='Training Data')
+plt.plot(test.index, test['value'], label='Test Data', color='orange')
+plt.plot(test.index, forecast, label='Forecast', color='green')
+plt.fill_between(test.index, conf_int[:, 0], conf_int[:, 1], color='green', alpha=0.3)
+plt.title('SARIMA Model Forecast')
+plt.xlabel('Date')
+plt.ylabel('Values')
+plt.legend()
+plt.show()

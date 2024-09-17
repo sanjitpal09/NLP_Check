@@ -1,0 +1,30 @@
+import torch
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import numpy as np
+
+# Load the Chronos tokenizer and model
+tokenizer = AutoTokenizer.from_pretrained("amazon/chronos-t5-tiny")
+model = AutoModelForCausalLM.from_pretrained("amazon/chronos-t5-tiny")
+
+# Prepare your time series data
+time_series = [1.0, 2.0, 3.0, 4.0, 5.0]  # Example time series
+
+# Tokenize the time series
+input_ids = tokenizer(time_series, return_tensors="pt").input_ids
+
+# Generate forecast
+with torch.no_grad():
+    output = model.generate(
+        input_ids,
+        max_length=input_ids.shape[1] + 5,  # Forecast 5 steps ahead
+        num_return_sequences=1,
+        do_sample=True
+    )
+
+# Decode the output
+forecast = tokenizer.decode(output[0], skip_special_tokens=True)
+
+# Convert forecast back to numerical values
+forecast_values = [float(val) for val in forecast.split()]
+
+print("Forecast:", forecast_values)

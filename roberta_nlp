@@ -1,0 +1,12 @@
+from transformers import pipeline
+
+# Initialize the sentiment analysis pipeline
+sentiment_analyzer = pipeline("sentiment-analysis", model="roberta-base-sentiment")
+
+# Example transcript snippet
+transcript = "Customer: I've been having issues with my internet connection. Agent: I'm sorry to hear that. Let's troubleshoot this together."
+
+# Analyze sentiment
+result = sentiment_analyzer(transcript)
+
+print(f"Sentiment: {result[0]['label']}, Score: {result[0]['score']:.4f}")
